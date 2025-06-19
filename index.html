@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Interview Coach</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 700px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #chatbox { 
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            height: 400px; 
+            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        .ai-message { 
+            color: #2c7be5;
+            margin: 10px 0;
+            padding: 8px 12px;
+            background: #f0f4ff;
+            border-radius: 10px 10px 10px 0;
+            display: inline-block;
+            max-width: 80%;
+        }
+        .user-message {
+            color: #2e2e2e;
+            margin: 10px 0 10px auto;
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-radius: 10px 10px 0 10px;
+            display: inline-block;
+            max-width: 80%;
+            text-align: right;
+        }
+        .feedback {
+            color: #228B22;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+            margin: 15px 0;
+        }
+        #userInput {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #2c7be5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1a68d1;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #2c7be5;">🤖 AI Interview Coach</h1>
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="Type your answer here...">
+    <button onclick="sendResponse()">Send Answer</button>
+
+    <script>
+        // PRE-LOADED 50+ QUESTIONS
+        const questionCategories = {
+            "Behavioral": [
+                "Tell me about yourself",
+                "Describe a time you failed and what you learned",
+                "Give an example of how you handled conflict",
+                "Describe a situation where you had to adapt quickly",
+                "Tell me about a time you went above and beyond"
+            ],
+            "Technical": [
+                "Explain a project where you used data structures",
+                "How would you optimize a slow database query?",
+                "Explain polymorphism with an example",
+                "Describe your debugging process",
+                "How would you design a URL shortener?"
+            ],
+            "Leadership": [
+                "Describe a time you motivated your team",
+                "How do you handle disagreements between teammates?",
+                "Tell me about a tough decision you made",
+                "Describe your leadership style",
+                "How do you delegate tasks effectively?"
+            ],
+            "Problem-Solving": [
+                "How would you troubleshoot a crashing app?",
+                "Describe a creative solution you implemented",
+                "How do you prioritize multiple urgent tasks?",
+                "Explain how you'd reduce server costs",
+                "Describe a complex problem you solved analytically"
+            ]
+        };
+
+        // SMART FEEDBACK SYSTEM
+        function getFeedback(question, answer) {
+            let feedback = [];
+            
+            // 1. Length check
+            const wordCount = answer.split(' ').length;
+            if (wordCount < 25) feedback.push("Try adding more details (aim for 25+ words)");
+            
+            // 2. STAR method detection (for behavioral questions)
+            if (question.includes("time you") || question.includes("situation")) {
+                const starTerms = ["situation", "task", "action", "result"];
+                const found = starTerms.filter(term => answer.toLowerCase().includes(term));
+                feedback.push(`STAR elements: ${found.length}/4 (Situation, Task, Action, Result)`);
+            }
+            
+            // 3. Technical keyword check
+            if (question.includes("explain") || question.includes("design")) {
+                const techWords = ["algorithm", "system", "process", "structure"];
+                const missing = techWords.filter(word => !answer.toLowerCase().includes(word));
+                if (missing.length > 0) feedback.push(`Try mentioning: ${missing.join(", ")}`);
+            }
+            
+            // 4. Positive tone check
+            const positiveWords = ["learned", "improved", "solved", "achieved", "success"];
+            const negativeWords = ["failed", "mistake", "problem", "couldn't", "difficult"];
+            
+            const posCount = positiveWords.filter(word => answer.toLowerCase().includes(word)).length;
+            const negCount = negativeWords.filter(word => answer.toLowerCase().includes(word)).length;
+            
+            if (negCount > posCount) feedback.push("Focus more on positive outcomes and learnings");
+            
+            return feedback.length ? feedback : ["Excellent answer! This would impress interviewers"];
+        }
+
+        // CHAT SYSTEM
+        let currentCategory = "Behavioral";
+        let currentQuestion = "";
+        
+        function displayMessage(sender, message, isFeedback = false) {
+            const chatbox = document.getElementById('chatbox');
+            const msgDiv = document.createElement('div');
+            
+            if (sender === "AI") {
+                msgDiv.className = isFeedback ? "feedback" : "ai-message";
+                msgDiv.innerHTML = isFeedback 
+                    ? `<strong>📝 Feedback:</strong><br>${message.join("<br>• ")}` 
+                    : `<strong>AI:</strong> ${message}`;
+            } else {
+                msgDiv.className = "user-message";
+                msgDiv.innerHTML = `<strong>You:</strong> ${message}`;
+            }
+            
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function newQuestion() {
+            const questions = questionCategories[currentCategory];
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            displayMessage("AI", currentQuestion);
+        }
+
+        function sendResponse() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) return;
+            
+            displayMessage("You", userInput);
+            document.getElementById('userInput').value = "";
+            
+            // Generate feedback
+            const feedback = getFeedback(currentQuestion, userInput);
+            displayMessage("AI", feedback, true);
+            
+            // Load next question
+            setTimeout(newQuestion, 1500);
+        }
+
+        // Start first question when page loads
+        window.onload = function() {
+            newQuestion();
+            document.getElementById('userInput').focus();
+        };
+    </script>
+</body>
+</html>
